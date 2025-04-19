@@ -182,6 +182,11 @@
       font-size: 0.85rem;
     }
 
+    #similarity-history li div {
+      color: gray;
+      transition: color 0.3s ease;
+    }
+
   </style>
 </head>
 
@@ -344,7 +349,7 @@
     sortedHistory.forEach((entry, index) => {
       const item = document.createElement('li');
       const label = document.createElement('div');
-      label.textContent = `Similarity: ${entry.similarity.toFixed(4)}`;
+      label.textContent = `${entry.similarity.toFixed(4)}`;
       label.style.fontWeight = 'bold';
 
       const contentWrapper = document.createElement('div');
@@ -389,13 +394,20 @@
           closeButton.style.cursor = 'pointer';
           closeButton.addEventListener('click', () => {
             contentWrapper.innerHTML = '';
+            label.style.color = 'gray';
             expanded = false;
           });
 
           contentWrapper.appendChild(img);
           contentWrapper.appendChild(loadButton);
           contentWrapper.appendChild(closeButton);
+
+          label.style.color = 'black';
           expanded = true;
+        } else {
+          contentWrapper.innerHTML = '';
+          label.style.color = 'gray';
+          expanded = false;
         }
       });
 
