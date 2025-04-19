@@ -149,12 +149,49 @@
     .slider-group input[type="range"] {
       width: 150px;
     }
+
+    #history-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 240px;
+      height: 100vh;
+      background-color: #ffffff;
+      border-left: 1px solid #ddd;
+      padding: 1rem;
+      box-shadow: -2px 0 6px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      z-index: 1000;
+    }
+
+    #history-panel h3 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+
+    #similarity-history {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    #similarity-history li {
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+
   </style>
 </head>
 
 <div id="overlay" style="display: none;">
   <div id="overlay-message">정답입니다!</div>
   <button id="close-overlay-button">닫기</button>
+</div>
+
+<div id="history-panel">
+  <h3>Similarity History</h3>
+  <ul id="similarity-history"></ul>
 </div>
 
 <body>
@@ -188,8 +225,6 @@
       <button id="compare-button">Compare Similarity</button>
     </div>
 
-    <h3>Similarity History</h3>
-    <ul id="similarity-history" style="max-height: 200px; overflow-y: auto; list-style: none; padding-left: 0;"></ul>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -219,7 +254,7 @@
       const y = event.clientY - rect.top;
       ctx.fillStyle = eraseMode ? 'white' : 'black';
       const radius = eraseMode ? eraserSize : penSize;
-      ctx.beginPath();
+      ctx.beginPath();fㅑㅌ
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
     });
@@ -299,40 +334,51 @@
     img.src = `problems/${randomImage}`;
   }
 
-  function addToHistory(similarity, imageDataUrl) {
+  function renderHistory() {
     const listContainer = document.getElementById('similarity-history');
-    const item = document.createElement('li');
-    item.style.cursor = 'pointer';
-    item.style.marginBottom = '1rem';
+    listContainer.innerHTML = '';
 
-    const label = document.createElement('div');
-    label.textContent = `Similarity: ${similarity.toFixed(4)}`;
-    label.style.fontWeight = 'bold';
+    // 내림차순 정렬
+    const sortedHistory = [...historyList].sort((a, b) => b.similarity - a.similarity);
 
-    const imgWrapper = document.createElement('div');
-    imgWrapper.style.marginTop = '0.5rem';
+    sortedHistory.forEach((entry) => {
+      const item = document.createElement('li');
 
-    let expanded = false;
+      const label = document.createElement('div');
+      label.textContent = `Similarity: ${entry.similarity.toFixed(4)}`;
+      label.style.fontWeight = 'bold';
 
-    label.addEventListener('click', () => {
-      if (!expanded) {
-        const img = new Image();
-        img.src = imageDataUrl;
-        img.style.width = '150px';
-        img.style.border = '1px solid #ccc';
-        img.style.borderRadius = '8px';
-        imgWrapper.appendChild(img);
-        expanded = true;
-      } else {
-        imgWrapper.innerHTML = '';
-        expanded = false;
-      }
+      const imgWrapper = document.createElement('div');
+      imgWrapper.style.marginTop = '0.5rem';
+
+      let expanded = false;
+
+      label.addEventListener('click', () => {
+        if (!expanded) {
+          const img = new Image();
+          img.src = entry.imageDataUrl;
+          img.style.width = '150px';
+          img.style.border = '1px solid #ccc';
+          img.style.borderRadius = '8px';
+          imgWrapper.appendChild(img);
+          expanded = true;
+        } else {
+          imgWrapper.innerHTML = '';
+          expanded = false;
+        }
+      });
+
+      item.appendChild(label);
+      item.appendChild(imgWrapper);
+      listContainer.appendChild(item);
     });
-
-    item.appendChild(label);
-    item.appendChild(imgWrapper);
-    listContainer.appendChild(item);
   }
+
+  function addToHistory(similarity, imageDataUrl) {
+    historyList.push({ similarity, imageDataUrl });
+    renderHistory();
+  }
+
 
   document.getElementById('compare-button').addEventListener('click', sendToModel);
   document.getElementById('toggle-mode-button').addEventListener('click', () => {
