@@ -187,7 +187,7 @@
     <div class="compare-button-wrapper">
       <button id="compare-button">Compare Similarity</button>
     </div>
-    
+
     <h3>Similarity History</h3>
     <ul id="similarity-history" style="max-height: 200px; overflow-y: auto; list-style: none; padding-left: 0;"></ul>
   </div>
@@ -302,17 +302,35 @@
   function addToHistory(similarity, imageDataUrl) {
     const listContainer = document.getElementById('similarity-history');
     const item = document.createElement('li');
-    item.textContent = `Similarity: ${similarity.toFixed(4)}`;
     item.style.cursor = 'pointer';
-    item.addEventListener('click', () => {
-      const img = new Image();
-      img.onload = () => {
-        const ctx = document.getElementById('canvas1').getContext('2d');
-        ctx.clearRect(0, 0, 384, 384);
-        ctx.drawImage(img, 0, 0, 384, 384);
-      };
-      img.src = imageDataUrl;
+    item.style.marginBottom = '1rem';
+
+    const label = document.createElement('div');
+    label.textContent = `Similarity: ${similarity.toFixed(4)}`;
+    label.style.fontWeight = 'bold';
+
+    const imgWrapper = document.createElement('div');
+    imgWrapper.style.marginTop = '0.5rem';
+
+    let expanded = false;
+
+    label.addEventListener('click', () => {
+      if (!expanded) {
+        const img = new Image();
+        img.src = imageDataUrl;
+        img.style.width = '150px';
+        img.style.border = '1px solid #ccc';
+        img.style.borderRadius = '8px';
+        imgWrapper.appendChild(img);
+        expanded = true;
+      } else {
+        imgWrapper.innerHTML = '';
+        expanded = false;
+      }
     });
+
+    item.appendChild(label);
+    item.appendChild(imgWrapper);
     listContainer.appendChild(item);
   }
 
