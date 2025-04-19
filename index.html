@@ -187,6 +187,9 @@
     <div class="compare-button-wrapper">
       <button id="compare-button">Compare Similarity</button>
     </div>
+    
+    <h3>Similarity History</h3>
+    <ul id="similarity-history" style="max-height: 200px; overflow-y: auto; list-style: none; padding-left: 0;"></ul>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
@@ -197,6 +200,7 @@
   let modelSession = null;
   let penSize = 2;
   let eraserSize = 10;
+  const historyList = [];
 
   function setupCanvas(canvas) {
     const ctx = canvas.getContext('2d');
@@ -256,7 +260,8 @@
   }
 
   async function sendToModel() {
-    const canvas1RGB = getCanvasRGBData(document.getElementById('canvas1'));
+    const canvas = document.getElementById('canvas1');
+    const canvas1RGB = getCanvasRGBData(canvas);
     const vec1 = await runViT(canvas1RGB);
 
     if (!cachedImageEmbedding) {
@@ -266,6 +271,9 @@
 
     const similarity = cosineSimilarity(vec1, cachedImageEmbedding);
     document.getElementById('similarity-result').innerText = similarity.toFixed(4);
+
+    const imageDataUrl = canvas.toDataURL(); // 현재 그림 저장
+    addToHistory(similarity, imageDataUrl); // 히스토리에 추가
 
     if (similarity >= 0.7) {
       document.getElementById('overlay').style.display = 'flex';
@@ -289,6 +297,23 @@
       console.log("Reference image embedding ready.");
     };
     img.src = `problems/${randomImage}`;
+  }
+
+  function addToHistory(similarity, imageDataUrl) {
+    const listContainer = document.getElementById('similarity-history');
+    const item = document.createElement('li');
+    item.textContent = `Similarity: ${similarity.toFixed(4)}`;
+    item.style.cursor = 'pointer';
+    item.addEventListener('click', () => {
+      const img = new Image();
+      img.onload = () => {
+        const ctx = document.getElementById('canvas1').getContext('2d');
+        ctx.clearRect(0, 0, 384, 384);
+        ctx.drawImage(img, 0, 0, 384, 384);
+      };
+      img.src = imageDataUrl;
+    });
+    listContainer.appendChild(item);
   }
 
   document.getElementById('compare-button').addEventListener('click', sendToModel);
