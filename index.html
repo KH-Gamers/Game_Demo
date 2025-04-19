@@ -179,6 +179,7 @@
     #similarity-history li {
       margin-bottom: 1rem;
       cursor: pointer;
+      font-size: 0.85rem;
     }
 
   </style>
@@ -338,38 +339,68 @@
     const listContainer = document.getElementById('similarity-history');
     listContainer.innerHTML = '';
 
-    // 내림차순 정렬
     const sortedHistory = [...historyList].sort((a, b) => b.similarity - a.similarity);
 
-    sortedHistory.forEach((entry) => {
+    sortedHistory.forEach((entry, index) => {
       const item = document.createElement('li');
-
       const label = document.createElement('div');
       label.textContent = `Similarity: ${entry.similarity.toFixed(4)}`;
       label.style.fontWeight = 'bold';
 
-      const imgWrapper = document.createElement('div');
-      imgWrapper.style.marginTop = '0.5rem';
+      const contentWrapper = document.createElement('div');
+      contentWrapper.style.marginTop = '0.5rem';
 
       let expanded = false;
 
       label.addEventListener('click', () => {
+        contentWrapper.innerHTML = '';
         if (!expanded) {
+          // 썸네일 이미지
           const img = new Image();
           img.src = entry.imageDataUrl;
           img.style.width = '150px';
           img.style.border = '1px solid #ccc';
           img.style.borderRadius = '8px';
-          imgWrapper.appendChild(img);
+          img.style.display = 'block';
+          img.style.marginBottom = '0.5rem';
+
+          // "캔버스로 불러오기" 버튼
+          const loadButton = document.createElement('button');
+          loadButton.textContent = '캔버스로 불러오기';
+          loadButton.style.marginRight = '0.5rem';
+          loadButton.style.padding = '0.3rem 0.6rem';
+          loadButton.style.fontSize = '0.8rem';
+          loadButton.style.cursor = 'pointer';
+          loadButton.addEventListener('click', () => {
+            const canvas = document.getElementById('canvas1');
+            const ctx = canvas.getContext('2d');
+            const imgToLoad = new Image();
+            imgToLoad.onload = () => {
+              ctx.drawImage(imgToLoad, 0, 0, canvas.width, canvas.height);
+            };
+            imgToLoad.src = entry.imageDataUrl;
+          });
+
+          // 닫기 버튼
+          const closeButton = document.createElement('button');
+          closeButton.textContent = '닫기';
+          closeButton.style.padding = '0.3rem 0.6rem';
+          closeButton.style.fontSize = '0.8rem';
+          closeButton.style.cursor = 'pointer';
+          closeButton.addEventListener('click', () => {
+            contentWrapper.innerHTML = '';
+            expanded = false;
+          });
+
+          contentWrapper.appendChild(img);
+          contentWrapper.appendChild(loadButton);
+          contentWrapper.appendChild(closeButton);
           expanded = true;
-        } else {
-          imgWrapper.innerHTML = '';
-          expanded = false;
         }
       });
 
       item.appendChild(label);
-      item.appendChild(imgWrapper);
+      item.appendChild(contentWrapper);
       listContainer.appendChild(item);
     });
   }
@@ -378,7 +409,6 @@
     historyList.push({ similarity, imageDataUrl });
     renderHistory();
   }
-
 
   document.getElementById('compare-button').addEventListener('click', sendToModel);
   document.getElementById('toggle-mode-button').addEventListener('click', () => {
