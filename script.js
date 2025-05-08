@@ -10,21 +10,34 @@ function setupCanvas(canvas) {
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   let drawing = false;
+  let lastX = 0, lastY = 0;
 
-  canvas.addEventListener('mousedown', () => drawing = true);
+  canvas.addEventListener('mousedown', (event) => {
+    drawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = event.clientX - rect.left;
+    lastY = event.clientY - rect.top;
+  });
+  
   canvas.addEventListener('mouseup', () => drawing = false);
   canvas.addEventListener('mouseout', () => drawing = false);
-
+  
   canvas.addEventListener('mousemove', (event) => {
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    ctx.fillStyle = eraseMode ? 'white' : 'black';
-    const radius = eraseMode ? eraserSize : penSize;
+  
+    ctx.strokeStyle = eraseMode ? 'white' : 'black';
+    ctx.lineWidth = (eraseMode ? eraserSize : penSize) * 2;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  
+    lastX = x;
+    lastY = y;
   });
 }
 
