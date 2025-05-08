@@ -221,7 +221,7 @@ document.getElementById('close-overlay-button').addEventListener('click', () => 
 
 setupCanvas(document.getElementById('canvas1'));
 
-const imageList = ["1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png"];
+const imageList = ["7.png"];
 
 window.onload = async () => {
   modelSession = await ort.InferenceSession.create('model_quantized.onnx');
