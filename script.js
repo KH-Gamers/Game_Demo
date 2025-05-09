@@ -4,10 +4,12 @@ let modelSession = null;
 let penSize = 2;
 let eraserSize = 10;
 const historyList = [];
+const imageList = ["6.png"]; // 로딩할 이미지 목록
+const undoStack = [];
 
 function setupCanvas(canvas) {
   function resizeCanvas() {
-    const size = Math.floor(window.innerWidth * 0.5);
+    const size = Math.min(window.innerWidth, window.innerHeight) * 0.5;  // 이 비율 조절 가능
     canvas.width = size;
     canvas.height = size;
 
@@ -16,14 +18,15 @@ function setupCanvas(canvas) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  resizeCanvas(); // 초기 크기 설정
-  window.addEventListener('resize', resizeCanvas); // 창 크기 변경 시 대응
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
 
   const ctx = canvas.getContext('2d');
   let drawing = false;
   let lastX = 0, lastY = 0;
 
   canvas.addEventListener('mousedown', (event) => {
+    saveCanvasState(canvas);
     drawing = true;
     const rect = canvas.getBoundingClientRect();
     lastX = event.clientX - rect.left;
@@ -93,8 +96,8 @@ async function runViT(rgbData) {
 
 async function sendToModel() {
   const canvas = document.getElementById('canvas1');
-  const canvas1RGB = getCanvasRGBData(canvas);
-  const vec1 = await runViT(canvas1RGB);
+  const canvasRGB = getCanvasRGBData(canvas);
+  const vec1 = await runViT(canvasRGB);
 
   if (!cachedImageEmbedding) {
     alert("Error: reference image embedding not ready.");
@@ -136,7 +139,6 @@ function renderHistory() {
   listContainer.innerHTML = '';
 
   const sortedHistory = [...historyList].sort((a, b) => b.similarity - a.similarity);
-
   sortedHistory.forEach((entry) => {
     const item = document.createElement('li');
     const label = document.createElement('div');
@@ -161,10 +163,6 @@ function renderHistory() {
 
         const loadButton = document.createElement('button');
         loadButton.textContent = '캔버스로 불러오기';
-        loadButton.style.marginRight = '0.5rem';
-        loadButton.style.padding = '0.3rem 0.6rem';
-        loadButton.style.fontSize = '0.8rem';
-        loadButton.style.cursor = 'pointer';
         loadButton.addEventListener('click', () => {
           const canvas = document.getElementById('canvas1');
           const ctx = canvas.getContext('2d');
@@ -177,9 +175,6 @@ function renderHistory() {
 
         const closeButton = document.createElement('button');
         closeButton.textContent = '닫기';
-        closeButton.style.padding = '0.3rem 0.6rem';
-        closeButton.style.fontSize = '0.8rem';
-        closeButton.style.cursor = 'pointer';
         closeButton.addEventListener('click', () => {
           contentWrapper.innerHTML = '';
           label.style.color = 'gray';
@@ -210,6 +205,25 @@ function addToHistory(similarity, imageDataUrl) {
   renderHistory();
 }
 
+function saveCanvasState(canvas) {
+  undoStack.push(canvas.toDataURL());
+  if (undoStack.length > 10) undoStack.shift(); // 최대 10개까지 저장
+}
+
+function undoLastAction() {
+  if (undoStack.length === 0) return;
+
+  const canvas = document.getElementById('canvas1');
+  const ctx = canvas.getContext('2d');
+  const previousImage = new Image();
+  previousImage.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(previousImage, 0, 0, canvas.width, canvas.height);
+  };
+  const dataUrl = undoStack.pop();
+  previousImage.src = dataUrl;
+}
+
 document.getElementById('compare-button').addEventListener('click', sendToModel);
 document.getElementById('toggle-mode-button').addEventListener('click', () => {
   eraseMode = !eraseMode;
@@ -221,26 +235,24 @@ document.getElementById('clear-canvas-button').addEventListener('click', () => {
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
-
 document.getElementById('pen-size-slider').addEventListener('input', (e) => {
   penSize = parseInt(e.target.value);
   document.getElementById('pen-size-label').innerText = penSize;
 });
-
 document.getElementById('eraser-size-slider').addEventListener('input', (e) => {
   eraserSize = parseInt(e.target.value);
   document.getElementById('eraser-size-label').innerText = eraserSize;
 });
-
 document.getElementById('close-overlay-button').addEventListener('click', () => {
   document.getElementById('overlay').style.display = 'none';
 });
+document.getElementById('undo-button').addEventListener('click', undoLastAction);
 
-setupCanvas(document.getElementById('canvas1'));
-
-const imageList = ["6.png"];
-
-window.onload = async () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  const canvas = document.getElementById('canvas1');
+  setupCanvas(canvas);
   modelSession = await ort.InferenceSession.create('model_quantized.onnx');
   await loadRandomImage(imageList);
-};
+});
+
+
