@@ -6,9 +6,20 @@ let eraserSize = 10;
 const historyList = [];
 
 function setupCanvas(canvas) {
+  function resizeCanvas() {
+    const size = Math.floor(window.innerWidth * 0.7);
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  resizeCanvas(); // 초기 크기 설정
+  window.addEventListener('resize', resizeCanvas); // 창 크기 변경 시 대응
+
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
   let drawing = false;
   let lastX = 0, lastY = 0;
 
@@ -18,16 +29,16 @@ function setupCanvas(canvas) {
     lastX = event.clientX - rect.left;
     lastY = event.clientY - rect.top;
   });
-  
+
   canvas.addEventListener('mouseup', () => drawing = false);
   canvas.addEventListener('mouseout', () => drawing = false);
-  
+
   canvas.addEventListener('mousemove', (event) => {
     if (!drawing) return;
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-  
+
     ctx.strokeStyle = eraseMode ? 'white' : 'black';
     ctx.lineWidth = (eraseMode ? eraserSize : penSize) * 2;
     ctx.lineCap = 'round';
@@ -35,14 +46,20 @@ function setupCanvas(canvas) {
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(x, y);
     ctx.stroke();
-  
+
     lastX = x;
     lastY = y;
   });
 }
 
 function getCanvasRGBData(canvas) {
-  const ctx = canvas.getContext('2d');
+  const offscreen = document.createElement('canvas');
+  offscreen.width = 224;
+  offscreen.height = 224;
+
+  const ctx = offscreen.getContext('2d');
+  ctx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
+
   const imageData = ctx.getImageData(0, 0, 224, 224);
   const data = imageData.data;
   const rgbData = [];
