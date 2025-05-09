@@ -7,7 +7,7 @@ const historyList = [];
 
 function setupCanvas(canvas) {
   function resizeCanvas() {
-    const size = Math.floor(window.innerWidth * 0.7);
+    const size = Math.floor(window.innerWidth * 0.5);
     canvas.width = size;
     canvas.height = size;
 
