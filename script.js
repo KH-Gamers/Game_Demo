@@ -4,8 +4,9 @@ let modelSession = null;
 let penSize = 2;
 let eraserSize = 10;
 const historyList = [];
-const imageList = ["6.png"]; // 로딩할 이미지 목록
+const imageList = ["9.png"]; // 로딩할 이미지 목록
 const undoStack = [];
+const redoStack = [];
 
 function setupCanvas(canvas) {
   function resizeCanvas() {
@@ -53,6 +54,36 @@ function setupCanvas(canvas) {
     lastX = x;
     lastY = y;
   });
+}
+
+document.addEventListener('mousemove', (e) => {
+  const canvas = document.getElementById('canvas1');
+  const canvasRect = canvas.getBoundingClientRect();
+  const insideCanvas = (
+    e.clientX >= canvasRect.left &&
+    e.clientX <= canvasRect.right &&
+    e.clientY >= canvasRect.top &&
+    e.clientY <= canvasRect.bottom
+  );
+  if (insideCanvas) {
+    customCursor.style.display = 'block';
+    customCursor.style.left = `${e.clientX}px`;
+    customCursor.style.top = `${e.clientY}px`;
+  } else {
+    customCursor.style.display = 'none';
+  }
+});
+
+function updateCursorStyle() {
+  if (eraseMode) {
+    customCursor.style.width = `${eraserSize * 2}px`;
+    customCursor.style.height = `${eraserSize * 2}px`;
+    customCursor.style.backgroundColor = 'gray';
+  } else {
+    customCursor.style.width = `${penSize * 2}px`;
+    customCursor.style.height = `${penSize * 2}px`;
+    customCursor.style.backgroundColor = 'black';
+  }
 }
 
 function getCanvasRGBData(canvas) {
@@ -207,7 +238,9 @@ function addToHistory(similarity, imageDataUrl) {
 
 function saveCanvasState(canvas) {
   undoStack.push(canvas.toDataURL());
-  if (undoStack.length > 10) undoStack.shift(); // 최대 10개까지 저장
+  if (undoStack.length > 10) undoStack.shift();
+  redoStack.length = 0;
+  updateUndoRedoButtons(); // 추가
 }
 
 function undoLastAction() {
@@ -215,19 +248,45 @@ function undoLastAction() {
 
   const canvas = document.getElementById('canvas1');
   const ctx = canvas.getContext('2d');
+  const dataUrl = undoStack.pop();
+  redoStack.push(canvas.toDataURL());
+
   const previousImage = new Image();
   previousImage.onload = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(previousImage, 0, 0, canvas.width, canvas.height);
+    updateUndoRedoButtons(); // 추가
   };
-  const dataUrl = undoStack.pop();
   previousImage.src = dataUrl;
+}
+
+function redoLastAction() {
+  if (redoStack.length === 0) return;
+
+  const canvas = document.getElementById('canvas1');
+  const ctx = canvas.getContext('2d');
+  const dataUrl = redoStack.pop();
+  undoStack.push(canvas.toDataURL());
+
+  const nextImage = new Image();
+  nextImage.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(nextImage, 0, 0, canvas.width, canvas.height);
+    updateUndoRedoButtons(); // 추가
+  };
+  nextImage.src = dataUrl;
+}
+
+function updateUndoRedoButtons() {
+  document.getElementById('undo-button').disabled = undoStack.length === 0;
+  document.getElementById('redo-button').disabled = redoStack.length === 0;
 }
 
 document.getElementById('compare-button').addEventListener('click', sendToModel);
 document.getElementById('toggle-mode-button').addEventListener('click', () => {
   eraseMode = !eraseMode;
   document.getElementById('toggle-mode-button').innerText = eraseMode ? 'Mode: Erase' : 'Mode: Draw';
+  updateCursorStyle();
 });
 document.getElementById('clear-canvas-button').addEventListener('click', () => {
   const canvas = document.getElementById('canvas1');
@@ -238,21 +297,29 @@ document.getElementById('clear-canvas-button').addEventListener('click', () => {
 document.getElementById('pen-size-slider').addEventListener('input', (e) => {
   penSize = parseInt(e.target.value);
   document.getElementById('pen-size-label').innerText = penSize;
+  updateCursorStyle();
 });
 document.getElementById('eraser-size-slider').addEventListener('input', (e) => {
   eraserSize = parseInt(e.target.value);
   document.getElementById('eraser-size-label').innerText = eraserSize;
+  updateCursorStyle();
 });
 document.getElementById('close-overlay-button').addEventListener('click', () => {
   document.getElementById('overlay').style.display = 'none';
 });
 document.getElementById('undo-button').addEventListener('click', undoLastAction);
+document.getElementById('redo-button').addEventListener('click', redoLastAction);
+
+const customCursor = document.getElementById('custom-cursor');
 
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('canvas1');
   setupCanvas(canvas);
+  updateCursorStyle();
   modelSession = await ort.InferenceSession.create('model_quantized.onnx');
   await loadRandomImage(imageList);
+  updateUndoRedoButtons(); // 초기 상태 업데이트
 });
+
 
 
