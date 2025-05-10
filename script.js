@@ -348,12 +348,19 @@ const customCursor = document.getElementById('custom-cursor');
 
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('canvas1');
+  console.log("hello1");
   setupCanvas(canvas);
+  console.log("hello2");
   updateCursorStyle();
+  console.log("hello3");
   updateSliderLabel(); // 초기 슬라이더 레이블 설정
+  console.log("hello4");
   modelSession = await ort.InferenceSession.create('model_quantized.onnx');
+  console.log("hello5");
   await loadRandomImage(imageList);
+  console.log("hello6");
   updateUndoRedoButtons(); // 초기 상태 업데이트
+  console.log("hello7");
 });
 
 
