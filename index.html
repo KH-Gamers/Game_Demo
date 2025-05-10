@@ -14,9 +14,32 @@
   <button id="close-overlay-button">닫기</button>
 </div>
 
+<button id="toggle-history-button">
+  <img src="src/history.png" alt="Toggle History" />
+</button>
+
 <div id="history-panel">
   <h3>Try History</h3>
   <ul id="similarity-history"></ul>
+</div>
+
+<div id="left-panel">
+  <div id="pen-eraser">
+    <button id="toggle-mode-button">
+      <img id="toggle-mode-icon" src="src/pen.png" alt="Mode Icon" />
+    </button>
+    <input id="size-slider" type="range" min="1" max="20" value="2" />
+    <label id="size-label">2</label>
+  </div>
+  <button id="undo-button">
+    <img src="src/undo.png" alt="Undo" />
+  </button>
+  <button id="redo-button">
+    <img src="src/redo.png" alt="Redo" />
+  </button>
+  <button id="clear-canvas-button">
+    <img src="src/clear.png" alt="Clear Canvas" />
+  </button>
 </div>
 
 <div class="container">
@@ -24,38 +47,15 @@
 
   <canvas id="canvas1"></canvas>
 
-  <p>Loaded Image: <span id="loaded-image-name">None</span></p>
-  <p>Similarity: <span id="similarity-result">-</span></p>
-
-  <div class="slider-group">
-    <label>
-      Pen Size:
-      <input type="range" id="pen-size-slider" min="1" max="20" value="2" />
-      <span id="pen-size-label">2</span>
-    </label>
-    <label>
-      Eraser Size:
-      <input type="range" id="eraser-size-slider" min="1" max="50" value="10" />
-      <span id="eraser-size-label">10</span>
-    </label>
-  </div>
-
-  <div class="button-group">
-    <button id="toggle-mode-button">Mode: Draw</button>
-    <button id="clear-canvas-button">Clear Canvas</button>
-    <button id="undo-button">Undo</button>
-    <button id="redo-button">Redo</button>
-  </div>
-
   <div class="compare-button-wrapper">
     <button id="compare-button">Compare Similarity</button>
   </div>
 
+  <p><span id="description">None</span></p>
+
   <div id="custom-cursor"></div>
 
 </div>
-
-
 
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <script src="script.js"></script>

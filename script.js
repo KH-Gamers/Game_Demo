@@ -4,7 +4,7 @@ let modelSession = null;
 let penSize = 2;
 let eraserSize = 10;
 const historyList = [];
-const imageList = ["9.png"]; // 로딩할 이미지 목록
+const imageList = ["1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png"]; // 로딩할 이미지 목록
 const undoStack = [];
 const redoStack = [];
 
@@ -136,7 +136,9 @@ async function sendToModel() {
   }
 
   const similarity = cosineSimilarity(vec1, cachedImageEmbedding);
-  document.getElementById('similarity-result').innerText = similarity.toFixed(4);
+  // compare-button의 텍스트를 similarity 값으로 업데이트
+  const compareButton = document.getElementById('compare-button');
+  compareButton.innerText = `Similarity: ${similarity.toFixed(4)}`;
 
   const imageDataUrl = canvas.toDataURL();
   addToHistory(similarity, imageDataUrl);
@@ -148,7 +150,21 @@ async function sendToModel() {
 
 async function loadRandomImage(imageList) {
   const randomImage = imageList[Math.floor(Math.random() * imageList.length)];
-  document.getElementById("loaded-image-name").innerText = randomImage;
+  const imageName = randomImage.split('.')[0]; // 확장자를 제외한 이미지 이름 추출
+  const descriptionPath = `problems/descriptions/${imageName}.txt`;
+
+  // 텍스트 파일 로드
+  try {
+    const response = await fetch(descriptionPath);
+    if (!response.ok) {
+      throw new Error(`Failed to load description: ${response.statusText}`);
+    }
+    const description = await response.text();
+    document.getElementById("description").innerText = description;
+  } catch (error) {
+    console.error(error);
+    document.getElementById("description").innerText = "Description not found.";
+  }
 
   const img = new Image();
   img.crossOrigin = "anonymous";
@@ -162,7 +178,7 @@ async function loadRandomImage(imageList) {
     cachedImageEmbedding = await runViT(rgbData);
     console.log("Reference image embedding ready.");
   };
-  img.src = `problems/${randomImage}`;
+  img.src = `problems/pictures/${randomImage}`;
 }
 
 function renderHistory() {
@@ -282,33 +298,51 @@ function updateUndoRedoButtons() {
   document.getElementById('redo-button').disabled = redoStack.length === 0;
 }
 
+function updateSliderLabel() {
+  const sizeLabel = document.getElementById('size-label');
+  sizeLabel.innerText = eraseMode ? eraserSize : penSize;
+}
+
+
+
+
+
 document.getElementById('compare-button').addEventListener('click', sendToModel);
 document.getElementById('toggle-mode-button').addEventListener('click', () => {
   eraseMode = !eraseMode;
-  document.getElementById('toggle-mode-button').innerText = eraseMode ? 'Mode: Erase' : 'Mode: Draw';
+  const toggleModeIcon = document.getElementById('toggle-mode-icon');
+  toggleModeIcon.src = eraseMode ? 'src/erase.png' : 'src/pen.png';
+  const sizeSlider = document.getElementById('size-slider');
+  sizeSlider.value = eraseMode ? eraserSize : penSize;
   updateCursorStyle();
+  updateSliderLabel(); // 슬라이더 레이블 업데이트
 });
 document.getElementById('clear-canvas-button').addEventListener('click', () => {
+  saveCanvasState(document.getElementById('canvas1'));
   const canvas = document.getElementById('canvas1');
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 });
-document.getElementById('pen-size-slider').addEventListener('input', (e) => {
-  penSize = parseInt(e.target.value);
-  document.getElementById('pen-size-label').innerText = penSize;
+document.getElementById('size-slider').addEventListener('input', (e) => {
+  const size = parseInt(e.target.value);
+  if (eraseMode) {
+    eraserSize = size;
+  } else {
+    penSize = size;
+  }
   updateCursorStyle();
-});
-document.getElementById('eraser-size-slider').addEventListener('input', (e) => {
-  eraserSize = parseInt(e.target.value);
-  document.getElementById('eraser-size-label').innerText = eraserSize;
-  updateCursorStyle();
+  updateSliderLabel(); // 슬라이더 레이블 업데이트
 });
 document.getElementById('close-overlay-button').addEventListener('click', () => {
   document.getElementById('overlay').style.display = 'none';
 });
 document.getElementById('undo-button').addEventListener('click', undoLastAction);
 document.getElementById('redo-button').addEventListener('click', redoLastAction);
+document.getElementById('toggle-history-button').addEventListener('click', () => {
+  const historyPanel = document.getElementById('history-panel');
+  historyPanel.classList.toggle('open'); // 'open' 클래스를 토글하여 애니메이션 적용
+});
 
 const customCursor = document.getElementById('custom-cursor');
 
@@ -316,6 +350,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('canvas1');
   setupCanvas(canvas);
   updateCursorStyle();
+  updateSliderLabel(); // 초기 슬라이더 레이블 설정
   modelSession = await ort.InferenceSession.create('model_quantized.onnx');
   await loadRandomImage(imageList);
   updateUndoRedoButtons(); // 초기 상태 업데이트
